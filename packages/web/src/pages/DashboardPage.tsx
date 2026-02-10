@@ -289,31 +289,41 @@ export function DashboardPage() {
                         <CopyButton text={address} />
                       </div>
 
-                      {/* Native balances */}
-                      <div>
-                        <h4 className="text-xs text-gray-600 uppercase tracking-wider mb-1">Native</h4>
-                        <div className="divide-y divide-gray-800">
-                          {[...selectedEntries.values()]
-                            .filter((e) => !e.isToken)
-                            .map((entry) => (
-                              <BalanceRow key={entry.key} entry={entry} prices={prices} currency={currency} hidden={privateBalances} walletAddress={address} />
-                            ))}
-                        </div>
-                      </div>
-
-                      {/* Token balances */}
-                      {[...selectedEntries.values()].some((e) => e.isToken) && (
-                        <div>
-                          <h4 className="text-xs text-gray-600 uppercase tracking-wider mb-1">Tokens</h4>
-                          <div className="divide-y divide-gray-800">
-                            {[...selectedEntries.values()]
-                              .filter((e) => e.isToken)
-                              .map((entry) => (
+                      {/* Native balances (> 0 only) */}
+                      {(() => {
+                        const native = [...selectedEntries.values()].filter(
+                          (e) => !e.isToken && e.balance !== null && parseFloat(e.balance) > 0,
+                        );
+                        if (native.length === 0) return null;
+                        return (
+                          <div>
+                            <h4 className="text-xs text-gray-600 uppercase tracking-wider mb-1">Native</h4>
+                            <div className="divide-y divide-gray-800">
+                              {native.map((entry) => (
                                 <BalanceRow key={entry.key} entry={entry} prices={prices} currency={currency} hidden={privateBalances} walletAddress={address} />
                               ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
+
+                      {/* Token balances (> 0 only) */}
+                      {(() => {
+                        const tokens = [...selectedEntries.values()].filter(
+                          (e) => e.isToken && e.balance !== null && parseFloat(e.balance) > 0,
+                        );
+                        if (tokens.length === 0) return null;
+                        return (
+                          <div>
+                            <h4 className="text-xs text-gray-600 uppercase tracking-wider mb-1">Tokens</h4>
+                            <div className="divide-y divide-gray-800">
+                              {tokens.map((entry) => (
+                                <BalanceRow key={entry.key} entry={entry} prices={prices} currency={currency} hidden={privateBalances} walletAddress={address} />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Exported key display */}
                       {exportedKey && (
