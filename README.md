@@ -46,12 +46,23 @@ Both the CLI and Electron app use the same core services and the same keystore d
 - Bulk transfer from Excel (.xlsx) file
 - Progress tracking for bulk operations
 
+### Privacy Modes
+- **Hide wallet addresses** - masks as `0xdA3...789` across the app
+- **Hide balances** - replaces amounts with `****`, shows green dot for non-zero wallets
+- Both toggleable from Settings
+
+### Block Explorers
+- Click any chain name in the balance panel to open the block explorer for that wallet
+- Default explorer URLs configured for all built-in chains (Etherscan, Polygonscan, BscScan, Arbiscan)
+- Custom explorer URL configurable per chain
+
 ### Desktop App (Electron)
 - Responsive layout (sidebar on desktop, drawer on mobile)
 - Dashboard with total balance, per-wallet breakdown, fiat values
 - Password dialog for signing operations
-- Settings: currency (USD/EUR), testnet visibility
+- Settings: currency (USD/EUR), testnet visibility, privacy modes
 - Drag & drop file upload for bulk transfers
+- Installable as native app (`.dmg` / `.exe` / `.AppImage`)
 
 ## Security Model
 
@@ -104,12 +115,23 @@ w3w chains remove       # Remove a chain
 
 ```bash
 # Development (hot reload)
-cd packages/web
-pnpm dev
+pnpm --filter @web3-wallet/web dev
 
-# Production build
-pnpm build
+# Build the app bundle (unpacked, for testing)
+pnpm --filter @web3-wallet/web run pack
+# Output: packages/web/release/mac-arm64/W3W.app (macOS)
+
+# Build distributable installer
+pnpm --filter @web3-wallet/web run dist
+# Output: packages/web/release/W3W-0.1.0.dmg (macOS)
+#         packages/web/release/W3W Setup 0.1.0.exe (Windows)
+#         packages/web/release/W3W-0.1.0.AppImage (Linux)
+
+# Run the built app directly (macOS)
+open packages/web/release/mac-arm64/W3W.app
 ```
+
+To install on macOS, open the `.dmg` and drag W3W to Applications. On Windows, run the `.exe` installer. On Linux, make the `.AppImage` executable and run it.
 
 ## Development
 
