@@ -32,6 +32,7 @@ function createWindow() {
   } else {
     win.loadFile(join(__dirname, '../dist/index.html'));
   }
+
 }
 
 app.whenReady().then(createWindow);

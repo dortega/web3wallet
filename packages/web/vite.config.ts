@@ -20,7 +20,15 @@ export default defineConfig({
     ]),
     renderer(),
   ],
+  base: './',
   build: {
     outDir: 'dist',
+    modulePreload: false,
+    rollupOptions: {
+      output: {
+        format: 'iife',
+        inlineDynamicImports: true,
+      },
+    },
   },
 });
