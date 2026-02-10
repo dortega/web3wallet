@@ -49,7 +49,7 @@ describe('TransferService', () => {
     const mockWallet = { sendTransaction: vi.fn(async () => mockTx) };
     vi.mocked(Wallet).mockImplementation(() => mockWallet as any);
 
-    const mockGetProvider = vi.fn(() => ({}) as any);
+    const mockGetProvider = vi.fn(() => ({ getFeeData: vi.fn(async () => ({ gasPrice: 50000000000n })) }) as any);
     const service = createTransferService(mockGetProvider, keystoreService);
 
     const result = await service.transferNative('0xFrom', 'password', '0xTo', '0.1', testChain);
@@ -73,7 +73,7 @@ describe('TransferService', () => {
     };
     vi.mocked(Wallet).mockImplementation(() => mockWallet as any);
 
-    const mockGetProvider = vi.fn(() => ({}) as any);
+    const mockGetProvider = vi.fn(() => ({ getFeeData: vi.fn(async () => ({ gasPrice: 50000000000n })) }) as any);
     const service = createTransferService(mockGetProvider, keystoreService);
 
     const progress = vi.fn();
@@ -112,7 +112,7 @@ describe('TransferService', () => {
     };
     vi.mocked(Wallet).mockImplementation(() => mockWallet as any);
 
-    const mockGetProvider = vi.fn(() => ({}) as any);
+    const mockGetProvider = vi.fn(() => ({ getFeeData: vi.fn(async () => ({ gasPrice: 50000000000n })) }) as any);
     const service = createTransferService(mockGetProvider, keystoreService);
 
     const results = await service.bulkTransfer(
