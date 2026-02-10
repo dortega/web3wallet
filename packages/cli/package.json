@@ -1,0 +1,26 @@
+{
+  "name": "@web3-wallet/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "w3w": "./build/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "@web3-wallet/core": "workspace:*",
+    "ink": "^5.2.0",
+    "pastel": "^3.0.0",
+    "react": "^18.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

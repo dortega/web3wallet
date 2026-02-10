@@ -1,0 +1,10 @@
+node_modules/
+build/
+dist/
+dist-electron/
+.env
+*.keystore.json
+.DS_Store
+*.tsbuildinfo
+*.swp
+coverage/
