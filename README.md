@@ -2,6 +2,8 @@
 
 A multi-interface Web3 wallet for managing Ethereum-compatible wallets, balances, and transfers. Built as a pnpm monorepo with three packages sharing a common core.
 
+![W3W Dashboard](docs/screenshot.png)
+
 ## Architecture
 
 ```
