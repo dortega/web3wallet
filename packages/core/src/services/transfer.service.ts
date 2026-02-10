@@ -31,12 +31,11 @@ export function createTransferService(
       const value = parseUnits(amount, chain.decimals);
 
       const tx = await wallet.sendTransaction({ to, value });
-      const receipt = await tx.wait();
 
       return {
         to,
         amount,
-        txHash: receipt?.hash ?? tx.hash,
+        txHash: tx.hash,
         success: true,
       };
     },
@@ -54,12 +53,11 @@ export function createTransferService(
       const value = parseUnits(amount, token.decimals);
 
       const tx = await contract.transfer(to, value);
-      const receipt = await tx.wait();
 
       return {
         to,
         amount,
-        txHash: receipt?.hash ?? tx.hash,
+        txHash: tx.hash,
         success: true,
       };
     },
@@ -87,13 +85,11 @@ export function createTransferService(
             const contract = new Contract(token.address, ERC20_ABI, wallet);
             const value = parseUnits(amount, token.decimals);
             const tx = await contract.transfer(to, value);
-            const receipt = await tx.wait();
-            txHash = receipt?.hash ?? tx.hash;
+            txHash = tx.hash;
           } else {
             const value = parseUnits(amount, chain.decimals);
             const tx = await wallet.sendTransaction({ to, value });
-            const receipt = await tx.wait();
-            txHash = receipt?.hash ?? tx.hash;
+            txHash = tx.hash;
           }
 
           results.push({ to, amount, txHash, success: true });
