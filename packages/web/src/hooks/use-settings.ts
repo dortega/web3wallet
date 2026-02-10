@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import type { AppSettings } from '@web3-wallet/core';
+import type { SettingsService } from '@web3-wallet/core';
 
-export type Currency = 'usd' | 'eur';
+export type Currency = AppSettings['currency'];
 
 export interface Settings {
   currency: Currency;
@@ -11,55 +13,61 @@ export interface Settings {
   setPrivateWallets: (v: boolean) => void;
   privateBalances: boolean;
   setPrivateBalances: (v: boolean) => void;
-}
-
-const KEY_CURRENCY = 'w3w_currency';
-const KEY_TESTNETS = 'w3w_show_testnets';
-const KEY_PRIVATE_WALLETS = 'w3w_private_wallets';
-const KEY_PRIVATE_BALANCES = 'w3w_private_balances';
-
-function loadCurrency(): Currency {
-  const saved = localStorage.getItem(KEY_CURRENCY);
-  return saved === 'eur' ? 'eur' : 'usd';
-}
-
-function loadBool(key: string): boolean {
-  return localStorage.getItem(key) === 'true';
+  loaded: boolean;
 }
 
 export const SettingsContext = createContext<Settings | null>(null);
 
-export function useSettingsProvider(): Settings {
-  const [currency, setCurrencyState] = useState<Currency>(loadCurrency);
-  const [showTestnets, setShowTestnetsState] = useState(() => loadBool(KEY_TESTNETS));
-  const [privateWallets, setPrivateWalletsState] = useState(() => loadBool(KEY_PRIVATE_WALLETS));
-  const [privateBalances, setPrivateBalancesState] = useState(() => loadBool(KEY_PRIVATE_BALANCES));
+export function useSettingsProvider(settingsService: SettingsService): Settings {
+  const [currency, setCurrencyState] = useState<Currency>('usd');
+  const [showTestnets, setShowTestnetsState] = useState(false);
+  const [privateWallets, setPrivateWalletsState] = useState(false);
+  const [privateBalances, setPrivateBalancesState] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    settingsService.getSettings().then((s) => {
+      setCurrencyState(s.currency);
+      setShowTestnetsState(s.showTestnets);
+      setPrivateWalletsState(s.privateWallets);
+      setPrivateBalancesState(s.privateBalances);
+      setLoaded(true);
+    });
+  }, [settingsService]);
+
+  const persist = useCallback(
+    (partial: Partial<AppSettings>) => {
+      settingsService.updateSettings(partial);
+    },
+    [settingsService],
+  );
 
   const setCurrency = useCallback((c: Currency) => {
     setCurrencyState(c);
-    localStorage.setItem(KEY_CURRENCY, c);
-  }, []);
+    persist({ currency: c });
+  }, [persist]);
 
   const setShowTestnets = useCallback((v: boolean) => {
     setShowTestnetsState(v);
-    localStorage.setItem(KEY_TESTNETS, String(v));
-  }, []);
+    persist({ showTestnets: v });
+  }, [persist]);
 
   const setPrivateWallets = useCallback((v: boolean) => {
     setPrivateWalletsState(v);
-    localStorage.setItem(KEY_PRIVATE_WALLETS, String(v));
-  }, []);
+    persist({ privateWallets: v });
+  }, [persist]);
 
   const setPrivateBalances = useCallback((v: boolean) => {
     setPrivateBalancesState(v);
-    localStorage.setItem(KEY_PRIVATE_BALANCES, String(v));
-  }, []);
+    persist({ privateBalances: v });
+  }, [persist]);
 
   return {
     currency, setCurrency,
     showTestnets, setShowTestnets,
     privateWallets, setPrivateWallets,
     privateBalances, setPrivateBalances,
+    loaded,
   };
 }
 

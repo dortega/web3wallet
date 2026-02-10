@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useServices } from '../hooks/use-services.js';
 import { useAsync } from '../hooks/use-async.js';
 import { usePasswordDialog } from '../hooks/use-password-dialog.js';
+import { useSettings, maskAddress } from '../hooks/use-settings.js';
 import { PasswordDialog } from '../components/PasswordDialog.js';
 import { WalletSelector } from '../components/WalletSelector.js';
 import { ChainSelector } from '../components/ChainSelector.js';
@@ -14,9 +15,10 @@ function isValidAddress(addr: string): boolean {
 }
 
 export function TransferPage() {
-  const { transferService, chainService, balanceService } = useServices();
+  const { transferService, chainService, balanceService, walletService } = useServices();
   const { data, error, loading, run, reset } = useAsync<TransferResult>();
   const pwd = usePasswordDialog();
+  const { privateWallets } = useSettings();
 
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -25,6 +27,12 @@ export function TransferPage() {
   const [tokenValue, setTokenValue] = useState('__native__');
   const [selectedToken, setSelectedToken] = useState<TokenConfig | null>(null);
   const [maxBalance, setMaxBalance] = useState<string | null>(null);
+  const [wallets, setWallets] = useState<string[]>([]);
+  const [showMyAccounts, setShowMyAccounts] = useState(false);
+
+  useEffect(() => {
+    walletService.listWallets().then(setWallets);
+  }, [walletService]);
 
   function handleTokenChange(value: string, token: TokenConfig | null) {
     setTokenValue(value);
@@ -43,7 +51,7 @@ export function TransferPage() {
         if (!chain || cancelled) return;
         const bal = selectedToken
           ? await balanceService.getTokenBalance(from, selectedToken, chain)
-          : await balanceService.getNativeBalance(from, chain);
+          : await balanceService.getMaxNativeTransfer(from, from, chain);
         if (!cancelled) setMaxBalance(bal);
       } catch {
         if (!cancelled) setMaxBalance(null);
@@ -121,7 +129,7 @@ export function TransferPage() {
               className="w-full mt-1"
             />
           </label>
-          <label className="block">
+          <div className="block">
             <span className="text-sm text-gray-400">To</span>
             <input
               value={to}
@@ -131,10 +139,39 @@ export function TransferPage() {
                 to && !toValid ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-blue-500'
               }`}
             />
-            {to && !toValid && (
-              <span className="text-xs text-red-400 mt-1 block">Invalid Ethereum address</span>
-            )}
-          </label>
+            <div className="flex items-start justify-between mt-1">
+              {to && !toValid ? (
+                <span className="text-xs text-red-400">Invalid Ethereum address</span>
+              ) : <span />}
+              {wallets.filter((w) => w !== from).length > 0 && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowMyAccounts(!showMyAccounts)}
+                    className="text-xs text-gray-500 hover:text-blue-400 transition-colors"
+                  >
+                    My accounts
+                  </button>
+                  {showMyAccounts && (
+                    <div className="absolute right-0 mt-1 z-10 bg-gray-800 border border-gray-700 rounded-md shadow-lg py-1 min-w-[280px]">
+                      {wallets
+                        .filter((w) => w !== from)
+                        .map((w) => (
+                          <button
+                            key={w}
+                            type="button"
+                            onClick={() => { setTo(w); setShowMyAccounts(false); }}
+                            className="w-full text-left px-3 py-2 text-sm font-mono hover:bg-gray-700 transition-colors"
+                          >
+                            {privateWallets ? maskAddress(w) : w}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
           <label className="block">
             <span className="text-sm text-gray-400">Amount</span>
             <input

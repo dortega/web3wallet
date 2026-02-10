@@ -1,4 +1,4 @@
-import { Contract, formatUnits } from 'ethers';
+import { Contract, formatUnits, parseUnits } from 'ethers';
 import type { ChainConfig, TokenConfig } from '../types/chain.types.js';
 import type { ProviderGetter } from './provider.service.js';
 
@@ -29,6 +29,26 @@ export function createBalanceService(getProvider: ProviderGetter) {
       const contract = new Contract(token.address, ERC20_ABI, provider);
       const balance = await contract.balanceOf(address);
       return formatUnits(balance, token.decimals);
+    },
+
+    async getMaxNativeTransfer(
+      address: string,
+      to: string,
+      chain: ChainConfig,
+    ): Promise<string> {
+      const provider = getProvider(chain);
+      const balance = await provider.getBalance(address);
+      const feeData = await provider.getFeeData();
+      const gasLimit = await provider.estimateGas({
+        from: address,
+        to,
+        value: balance > 0n ? 1n : 0n,
+      }).catch(() => 21000n);
+      const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice ?? 0n;
+      const gasCost = gasLimit * gasPrice;
+      const maxValue = balance - gasCost;
+      if (maxValue <= 0n) return '0';
+      return formatUnits(maxValue, chain.decimals);
     },
 
     async getTokenInfo(

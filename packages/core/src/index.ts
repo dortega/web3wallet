@@ -5,6 +5,7 @@ export {
   DEFAULT_KEYSTORE_DIR,
   DEFAULT_CHAINS_CONFIG,
   DEFAULT_TOKENS_CONFIG,
+  DEFAULT_SETTINGS_CONFIG,
 } from './utils/paths.js';
 export {
   parseTransferExcel,
@@ -42,3 +43,8 @@ export {
   createTokenService,
   type TokenService,
 } from './services/token.service.js';
+export {
+  createSettingsService,
+  type SettingsService,
+  type AppSettings,
+} from './services/settings.service.js';
