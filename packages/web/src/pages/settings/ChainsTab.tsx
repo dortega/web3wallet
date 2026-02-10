@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useServices } from '../hooks/use-services.js';
-import { Alert } from '../components/Alert.js';
+import { useServices } from '../../hooks/use-services.js';
+import { Alert } from '../../components/Alert.js';
 import type { ChainConfig } from '@web3-wallet/core';
 
 const emptyChain: ChainConfig = { id: 0, name: '', symbol: '', rpcUrl: '', decimals: 18, testnet: false, explorerUrl: '' };
 
-export function ChainsPage() {
+export function ChainsTab() {
   const { chainService } = useServices();
   const [chains, setChains] = useState<ChainConfig[]>([]);
   const [editing, setEditing] = useState<ChainConfig | null>(null);
@@ -39,9 +39,8 @@ export function ChainsPage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Chains</h2>
+    <div>
+      <div className="flex items-center justify-end mb-4">
         <button
           onClick={() => setEditing({ ...emptyChain })}
           className="px-4 py-2 text-sm rounded-md bg-blue-600 hover:bg-blue-700 text-white"

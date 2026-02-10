@@ -9,8 +9,6 @@ import { ImportWalletPage } from './pages/ImportWalletPage.js';
 import { WalletDetailPage } from './pages/WalletDetailPage.js';
 import { TransferPage } from './pages/TransferPage.js';
 import { BulkTransferPage } from './pages/BulkTransferPage.js';
-import { ChainsPage } from './pages/ChainsPage.js';
-import { TokensPage } from './pages/TokensPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 
 function AppInner() {
@@ -30,8 +28,6 @@ function AppInner() {
             <Route path="wallet/:address" element={<WalletDetailPage />} />
             <Route path="transfer" element={<TransferPage />} />
             <Route path="bulk-transfer" element={<BulkTransferPage />} />
-            <Route path="chains" element={<ChainsPage />} />
-            <Route path="tokens" element={<TokensPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

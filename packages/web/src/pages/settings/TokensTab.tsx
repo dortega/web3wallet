@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useServices } from '../hooks/use-services.js';
-import { useAsync } from '../hooks/use-async.js';
-import { Alert } from '../components/Alert.js';
-import { ChainSelector } from '../components/ChainSelector.js';
+import { useServices } from '../../hooks/use-services.js';
+import { useAsync } from '../../hooks/use-async.js';
+import { Alert } from '../../components/Alert.js';
+import { ChainSelector } from '../../components/ChainSelector.js';
 import type { TokenConfig, ChainConfig } from '@web3-wallet/core';
 
-export function TokensPage() {
+export function TokensTab() {
   const { tokenService, balanceService, chainService } = useServices();
   const [tokens, setTokens] = useState<TokenConfig[]>([]);
   const [chains, setChains] = useState<ChainConfig[]>([]);
@@ -71,9 +71,8 @@ export function TokensPage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Tokens</h2>
+    <div>
+      <div className="flex items-center justify-end mb-4">
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 text-sm rounded-md bg-blue-600 hover:bg-blue-700 text-white"
@@ -88,7 +87,6 @@ export function TokensPage() {
         </div>
       )}
 
-      {/* Add token form */}
       {showForm && (
         <form onSubmit={handleAdd} className="mb-6 p-4 border border-gray-800 rounded-lg space-y-3">
           <label className="block">
@@ -152,7 +150,6 @@ export function TokensPage() {
         </form>
       )}
 
-      {/* Token list grouped by chain */}
       {[...grouped.entries()].map(([chainId, chainTokens]) => {
         const chain = chainById.get(chainId);
         return (

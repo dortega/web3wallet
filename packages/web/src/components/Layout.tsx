@@ -8,8 +8,6 @@ const mainNav = [
 ];
 
 const configNav = [
-  { to: '/chains', label: 'Chains' },
-  { to: '/tokens', label: 'Tokens' },
   { to: '/settings', label: 'Settings' },
 ];
 
@@ -58,7 +56,6 @@ export function Layout() {
           ))}
         </nav>
         <nav className="flex flex-col gap-1 border-t border-gray-800 pt-3 mt-3">
-          <span className="px-3 text-xs text-gray-600 uppercase tracking-wider mb-1">Config</span>
           {configNav.map((item) => (
             <NavItem key={item.to} {...item} onClick={() => setOpen(false)} />
           ))}
