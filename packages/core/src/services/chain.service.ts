@@ -7,7 +7,7 @@ const DEFAULT_CHAINS: ChainConfig[] = [
     id: 1,
     name: 'Ethereum',
     symbol: 'ETH',
-    rpcUrl: 'https://eth.llamarpc.com',
+    rpcUrl: 'https://ethereum-rpc.publicnode.com',
     decimals: 18,
     explorerUrl: 'https://etherscan.io',
   },
@@ -15,7 +15,7 @@ const DEFAULT_CHAINS: ChainConfig[] = [
     id: 137,
     name: 'Polygon',
     symbol: 'POL',
-    rpcUrl: 'https://polygon-rpc.com',
+    rpcUrl: 'https://polygon-bor-rpc.publicnode.com',
     decimals: 18,
     explorerUrl: 'https://polygonscan.com',
   },
@@ -44,50 +44,107 @@ const DEFAULT_CHAINS: ChainConfig[] = [
     testnet: true,
     explorerUrl: 'https://sepolia.etherscan.io',
   },
+  {
+    id: 421614,
+    name: 'Arbitrum Sepolia',
+    symbol: 'ETH',
+    rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
+    decimals: 18,
+    testnet: true,
+    explorerUrl: 'https://sepolia.arbiscan.io',
+  },
 ];
 
+interface CustomChains {
+  added: ChainConfig[];
+  removed: number[];
+}
+
 export function createChainService(fs: FileSystem, configPath: string) {
-  async function readChains(): Promise<ChainConfig[]> {
+  async function readCustom(): Promise<CustomChains> {
     if (!(await fs.exists(configPath))) {
-      return [...DEFAULT_CHAINS];
+      return { added: [], removed: [] };
     }
     const raw = await fs.readFile(configPath);
-    return JSON.parse(raw) as ChainConfig[];
+    const parsed = JSON.parse(raw);
+
+    // Migrate old format (plain array) to new format
+    if (Array.isArray(parsed)) {
+      const defaultById = new Map(DEFAULT_CHAINS.map((c) => [c.id, c]));
+      const added: ChainConfig[] = [];
+      for (const chain of parsed as ChainConfig[]) {
+        const def = defaultById.get(chain.id);
+        // Keep if: not a default, or is a default but user modified it
+        if (!def || JSON.stringify(chain) !== JSON.stringify(def)) {
+          added.push(chain);
+        }
+      }
+      const custom: CustomChains = { added, removed: [] };
+      await writeCustom(custom);
+      return custom;
+    }
+
+    return parsed as CustomChains;
   }
 
-  async function writeChains(chains: ChainConfig[]): Promise<void> {
+  async function writeCustom(custom: CustomChains): Promise<void> {
     await fs.mkdir(dirname(configPath));
-    await fs.writeFile(configPath, JSON.stringify(chains, null, 2));
+    await fs.writeFile(configPath, JSON.stringify(custom, null, 2));
+  }
+
+  function mergeChains(custom: CustomChains): ChainConfig[] {
+    const removedSet = new Set(custom.removed);
+    const addedById = new Map(custom.added.map((c) => [c.id, c]));
+
+    const merged: ChainConfig[] = [];
+    for (const chain of DEFAULT_CHAINS) {
+      if (removedSet.has(chain.id)) continue;
+      merged.push(addedById.get(chain.id) ?? chain);
+      addedById.delete(chain.id);
+    }
+    // Append custom chains that don't override a default
+    for (const chain of addedById.values()) {
+      merged.push(chain);
+    }
+    return merged;
   }
 
   return {
     async getChains(): Promise<ChainConfig[]> {
-      return readChains();
+      const custom = await readCustom();
+      return mergeChains(custom);
     },
 
     async getChain(chainId: number): Promise<ChainConfig | undefined> {
-      const chains = await readChains();
+      const chains = await this.getChains();
       return chains.find((c) => c.id === chainId);
     },
 
     async addChain(chain: ChainConfig): Promise<void> {
-      const chains = await readChains();
-      const existing = chains.findIndex((c) => c.id === chain.id);
-      if (existing !== -1) {
-        chains[existing] = chain;
+      const custom = await readCustom();
+      const idx = custom.added.findIndex((c) => c.id === chain.id);
+      if (idx !== -1) {
+        custom.added[idx] = chain;
       } else {
-        chains.push(chain);
+        custom.added.push(chain);
       }
-      await writeChains(chains);
+      // If it was removed before, un-remove it
+      custom.removed = custom.removed.filter((id) => id !== chain.id);
+      await writeCustom(custom);
     },
 
     async removeChain(chainId: number): Promise<boolean> {
-      const chains = await readChains();
-      const filtered = chains.filter((c) => c.id !== chainId);
-      if (filtered.length === chains.length) {
-        return false;
+      const custom = await readCustom();
+      const isDefault = DEFAULT_CHAINS.some((c) => c.id === chainId);
+      const wasAdded = custom.added.some((c) => c.id === chainId);
+
+      if (!isDefault && !wasAdded) return false;
+
+      custom.added = custom.added.filter((c) => c.id !== chainId);
+      if (isDefault && !custom.removed.includes(chainId)) {
+        custom.removed.push(chainId);
       }
-      await writeChains(filtered);
+      await writeCustom(custom);
       return true;
     },
 

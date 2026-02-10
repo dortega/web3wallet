@@ -30,49 +30,110 @@ const DEFAULT_TOKENS: TokenConfig[] = [
   { address: '0xf97f4df75117a78c1A5a0DBb814Af92458539FB4', symbol: 'LINK', decimals: 18, chainId: 42161 },
 ];
 
+function tokenKey(chainId: number, address: string): string {
+  return `${chainId}:${address.toLowerCase()}`;
+}
+
+interface CustomTokens {
+  added: TokenConfig[];
+  removed: string[]; // keys: "chainId:address"
+}
+
 export function createTokenService(fs: FileSystem, configPath: string) {
-  async function readTokens(): Promise<TokenConfig[]> {
+  async function readCustom(): Promise<CustomTokens> {
     if (!(await fs.exists(configPath))) {
-      return [...DEFAULT_TOKENS];
+      return { added: [], removed: [] };
     }
     const raw = await fs.readFile(configPath);
-    return JSON.parse(raw) as TokenConfig[];
+    const parsed = JSON.parse(raw);
+
+    // Migrate old format (plain array) to new format
+    if (Array.isArray(parsed)) {
+      const defaultByKey = new Map(
+        DEFAULT_TOKENS.map((t) => [tokenKey(t.chainId, t.address), t]),
+      );
+      const added: TokenConfig[] = [];
+      for (const token of parsed as TokenConfig[]) {
+        const key = tokenKey(token.chainId, token.address);
+        const def = defaultByKey.get(key);
+        if (!def || JSON.stringify(token) !== JSON.stringify(def)) {
+          added.push(token);
+        }
+      }
+      const custom: CustomTokens = { added, removed: [] };
+      await writeCustom(custom);
+      return custom;
+    }
+
+    return parsed as CustomTokens;
   }
 
-  async function writeTokens(tokens: TokenConfig[]): Promise<void> {
+  async function writeCustom(custom: CustomTokens): Promise<void> {
     await fs.mkdir(dirname(configPath));
-    await fs.writeFile(configPath, JSON.stringify(tokens, null, 2));
+    await fs.writeFile(configPath, JSON.stringify(custom, null, 2));
+  }
+
+  function mergeTokens(custom: CustomTokens): TokenConfig[] {
+    const removedSet = new Set(custom.removed);
+    const addedByKey = new Map(custom.added.map((t) => [tokenKey(t.chainId, t.address), t]));
+
+    const merged: TokenConfig[] = [];
+    for (const token of DEFAULT_TOKENS) {
+      const key = tokenKey(token.chainId, token.address);
+      if (removedSet.has(key)) continue;
+      merged.push(addedByKey.get(key) ?? token);
+      addedByKey.delete(key);
+    }
+    // Append custom tokens that don't override a default
+    for (const token of addedByKey.values()) {
+      merged.push(token);
+    }
+    return merged;
   }
 
   return {
     async getTokens(chainId?: number): Promise<TokenConfig[]> {
-      const tokens = await readTokens();
+      const custom = await readCustom();
+      const tokens = mergeTokens(custom);
       if (chainId === undefined) return tokens;
       return tokens.filter((t) => t.chainId === chainId);
     },
 
     async addToken(token: TokenConfig): Promise<void> {
-      const tokens = await readTokens();
-      const key = `${token.chainId}:${token.address.toLowerCase()}`;
-      const idx = tokens.findIndex(
-        (t) => `${t.chainId}:${t.address.toLowerCase()}` === key,
+      const custom = await readCustom();
+      const key = tokenKey(token.chainId, token.address);
+      const idx = custom.added.findIndex(
+        (t) => tokenKey(t.chainId, t.address) === key,
       );
       if (idx !== -1) {
-        tokens[idx] = token;
+        custom.added[idx] = token;
       } else {
-        tokens.push(token);
+        custom.added.push(token);
       }
-      await writeTokens(tokens);
+      // Un-remove if it was removed
+      custom.removed = custom.removed.filter((k) => k !== key);
+      await writeCustom(custom);
     },
 
     async removeToken(chainId: number, address: string): Promise<boolean> {
-      const tokens = await readTokens();
-      const lower = address.toLowerCase();
-      const filtered = tokens.filter(
-        (t) => !(t.chainId === chainId && t.address.toLowerCase() === lower),
+      const custom = await readCustom();
+      const key = tokenKey(chainId, address);
+      const isDefault = DEFAULT_TOKENS.some(
+        (t) => tokenKey(t.chainId, t.address) === key,
       );
-      if (filtered.length === tokens.length) return false;
-      await writeTokens(filtered);
+      const wasAdded = custom.added.some(
+        (t) => tokenKey(t.chainId, t.address) === key,
+      );
+
+      if (!isDefault && !wasAdded) return false;
+
+      custom.added = custom.added.filter(
+        (t) => tokenKey(t.chainId, t.address) !== key,
+      );
+      if (isDefault && !custom.removed.includes(key)) {
+        custom.removed.push(key);
+      }
+      await writeCustom(custom);
       return true;
     },
 
