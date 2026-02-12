@@ -1,8 +1,11 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { ServicesProvider } from './context/services.js';
+import { WalletConnectProvider } from './context/walletconnect.js';
 import { SettingsContext, useSettingsProvider } from './hooks/use-settings.js';
 import { useServices } from './hooks/use-services.js';
 import { Layout } from './components/Layout.js';
+import { SessionProposalDialog } from './components/SessionProposalDialog.js';
+import { SignRequestDialog } from './components/SignRequestDialog.js';
 import { DashboardPage } from './pages/DashboardPage.js';
 import { CreateWalletPage } from './pages/CreateWalletPage.js';
 import { ImportWalletPage } from './pages/ImportWalletPage.js';
@@ -10,6 +13,7 @@ import { WalletDetailPage } from './pages/WalletDetailPage.js';
 import { TransferPage } from './pages/TransferPage.js';
 import { BulkTransferPage } from './pages/BulkTransferPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
+import { WalletConnectPage } from './pages/WalletConnectPage.js';
 
 function AppInner() {
   const { settingsService } = useServices();
@@ -19,19 +23,24 @@ function AppInner() {
 
   return (
     <SettingsContext.Provider value={settings}>
-      <HashRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="create" element={<CreateWalletPage />} />
-            <Route path="import" element={<ImportWalletPage />} />
-            <Route path="wallet/:address" element={<WalletDetailPage />} />
-            <Route path="transfer" element={<TransferPage />} />
-            <Route path="bulk-transfer" element={<BulkTransferPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
-        </Routes>
-      </HashRouter>
+      <WalletConnectProvider>
+        <HashRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<DashboardPage />} />
+              <Route path="create" element={<CreateWalletPage />} />
+              <Route path="import" element={<ImportWalletPage />} />
+              <Route path="wallet/:address" element={<WalletDetailPage />} />
+              <Route path="transfer" element={<TransferPage />} />
+              <Route path="bulk-transfer" element={<BulkTransferPage />} />
+              <Route path="walletconnect" element={<WalletConnectPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+          </Routes>
+        </HashRouter>
+        <SessionProposalDialog />
+        <SignRequestDialog />
+      </WalletConnectProvider>
     </SettingsContext.Provider>
   );
 }

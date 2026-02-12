@@ -5,6 +5,7 @@ const mainNav = [
   { to: '/', label: 'Dashboard' },
   { to: '/transfer', label: 'Transfer' },
   { to: '/bulk-transfer', label: 'Bulk Transfer' },
+  { to: '/walletconnect', label: 'WalletConnect' },
 ];
 
 const configNav = [

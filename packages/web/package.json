@@ -15,7 +15,12 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@walletconnect/core": "2.17.1",
+    "@walletconnect/types": "2.17.1",
+    "@walletconnect/utils": "2.17.1",
+    "@walletconnect/web3wallet": "^1.16.1",
     "@web3-wallet/core": "workspace:*",
+    "ethers": "^6.16.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.0"
