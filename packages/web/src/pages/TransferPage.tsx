@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useServices } from '../hooks/use-services.js';
 import { useAsync } from '../hooks/use-async.js';
 import { usePasswordDialog } from '../hooks/use-password-dialog.js';
@@ -15,10 +16,11 @@ function isValidAddress(addr: string): boolean {
 }
 
 export function TransferPage() {
-  const { transferService, chainService, balanceService, walletService } = useServices();
+  const { transferService, chainService, balanceService, walletService, tokenService } = useServices();
   const { data, error, loading, run, reset } = useAsync<TransferResult>();
   const pwd = usePasswordDialog();
   const { privateWallets } = useSettings();
+  const [searchParams] = useSearchParams();
 
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -33,6 +35,27 @@ export function TransferPage() {
   useEffect(() => {
     walletService.listWallets().then(setWallets);
   }, [walletService]);
+
+  // Pre-fill from query params
+  useEffect(() => {
+    const qFrom = searchParams.get('from');
+    const qChainId = searchParams.get('chainId');
+    const qToken = searchParams.get('token');
+
+    if (qFrom) setFrom(qFrom);
+    if (qChainId) setChainId(Number(qChainId));
+    if (qToken) {
+      // Set the token address as value — TokenSelector uses address as option value
+      setTokenValue(qToken);
+      // Load the full token config to set selectedToken
+      if (qChainId) {
+        tokenService.getTokens(Number(qChainId)).then((tokens) => {
+          const match = tokens.find((t) => t.address.toLowerCase() === qToken.toLowerCase());
+          if (match) setSelectedToken(match);
+        });
+      }
+    }
+  }, [searchParams, tokenService]);
 
   function handleTokenChange(value: string, token: TokenConfig | null) {
     setTokenValue(value);

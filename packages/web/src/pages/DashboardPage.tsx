@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useServices } from '../hooks/use-services.js';
 import { useSettings, maskAddress } from '../hooks/use-settings.js';
 import { usePrices, formatFiat, type PriceMap } from '../hooks/use-prices.js';
@@ -32,7 +32,15 @@ function ExplorerLink({ entry, walletAddress, children }: { entry: BalanceEntry;
   );
 }
 
-function BalanceRow({ entry, prices, currency, hidden, walletAddress }: { entry: BalanceEntry; prices: PriceMap; currency: 'usd' | 'eur'; hidden?: boolean; walletAddress: string }) {
+function SendIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+      <path d="M3.105 2.288a.75.75 0 0 0-.826.95l1.414 4.926A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.11 28.11 0 0 0 15.293-7.155.75.75 0 0 0 0-1.114A28.11 28.11 0 0 0 3.105 2.288Z" />
+    </svg>
+  );
+}
+
+function BalanceRow({ entry, prices, currency, hidden, walletAddress, onTransfer }: { entry: BalanceEntry; prices: PriceMap; currency: 'usd' | 'eur'; hidden?: boolean; walletAddress: string; onTransfer?: () => void }) {
   const price = prices.get(entry.symbol);
   const bal = entry.balance ? parseFloat(entry.balance) : 0;
   const fiatValue = price && bal > 0 ? bal * price : null;
@@ -56,7 +64,7 @@ function BalanceRow({ entry, prices, currency, hidden, walletAddress }: { entry:
           </ExplorerLink>
         )}
       </span>
-      <span className="font-mono">
+      <span className="font-mono flex items-center gap-2">
         {entry.loading ? (
           <span className="text-gray-600 animate-pulse">...</span>
         ) : entry.error ? (
@@ -76,6 +84,15 @@ function BalanceRow({ entry, prices, currency, hidden, walletAddress }: { entry:
             )}
           </>
         )}
+        {onTransfer && (
+          <button
+            onClick={onTransfer}
+            className="p-1 rounded text-gray-600 hover:text-blue-400 hover:bg-gray-800 transition-colors"
+            title="Transfer"
+          >
+            <SendIcon />
+          </button>
+        )}
       </span>
     </div>
   );
@@ -93,6 +110,7 @@ export function DashboardPage() {
   const { currency, showTestnets, privateWallets, privateBalances } = useSettings();
   const { prices } = usePrices(currency);
   const pwd = usePasswordDialog();
+  const navigate = useNavigate();
   const [wallets, setWallets] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState('');
@@ -300,7 +318,7 @@ export function DashboardPage() {
                             <h4 className="text-xs text-gray-600 uppercase tracking-wider mb-1">Native</h4>
                             <div className="divide-y divide-gray-800">
                               {native.map((entry) => (
-                                <BalanceRow key={entry.key} entry={entry} prices={prices} currency={currency} hidden={privateBalances} walletAddress={address} />
+                                <BalanceRow key={entry.key} entry={entry} prices={prices} currency={currency} hidden={privateBalances} walletAddress={address} onTransfer={() => navigate(`/transfer?from=${address}&chainId=${entry.chainId}`)} />
                               ))}
                             </div>
                           </div>
@@ -318,7 +336,7 @@ export function DashboardPage() {
                             <h4 className="text-xs text-gray-600 uppercase tracking-wider mb-1">Tokens</h4>
                             <div className="divide-y divide-gray-800">
                               {tokens.map((entry) => (
-                                <BalanceRow key={entry.key} entry={entry} prices={prices} currency={currency} hidden={privateBalances} walletAddress={address} />
+                                <BalanceRow key={entry.key} entry={entry} prices={prices} currency={currency} hidden={privateBalances} walletAddress={address} onTransfer={() => navigate(`/transfer?from=${address}&chainId=${entry.chainId}&token=${entry.tokenAddress}`)} />
                               ))}
                             </div>
                           </div>
